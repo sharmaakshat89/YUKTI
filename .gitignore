@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# Root env files
+.env
+.env.*
+
+# Backend env files
+backend/.env
+backend/.env.*
+
+# Allow safe template(s)
+!.env.example
+!backend/.env.example
