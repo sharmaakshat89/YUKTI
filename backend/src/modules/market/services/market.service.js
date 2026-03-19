@@ -12,6 +12,7 @@ const signalCache = new NodeCache({ stdTTL: 60 }); //reserves space in RAM
  * Guards credits by using an internal caching layer.
  */
 export const fetchForexData = async (symbol = 'EUR/USD', interval = '1h') => {
+    //const latestTime = response?.data?.values?.[0]?.datetime || 'unknown';
     const cacheKey = `forex_${symbol}_${interval}`; // Unique key for cache lookup
 
     // 1. SIGNAL CACHE CHECK (Architecture Rule [1])
@@ -22,7 +23,7 @@ export const fetchForexData = async (symbol = 'EUR/USD', interval = '1h') => {
     }
 
     try {
-        // 2. EXTERNAL API CALL
+        // 2. API CALL
         const response = await axios.get(`https://api.twelvedata.com/time_series`, {
             params: {
                 symbol: symbol, // Currency pair like EUR/USD
@@ -38,13 +39,16 @@ export const fetchForexData = async (symbol = 'EUR/USD', interval = '1h') => {
         }
 
         // 4. DATA TRANSFORMATION & PARSEFLOAT
+        if (!response.data.values || !Array.isArray(response.data.values)) {
+        throw new Error('Invalid data received from API');
+        }
         const formattedData = response.data.values.map(candle => ({
             time: new Date(candle.datetime).getTime() / 1000, // String to Unix timestamp for Charts [1]
             open: parseFloat(candle.open), // String to Number conversion for Math
             high: parseFloat(candle.high), // High price for volatility filters [3]
             low: parseFloat(candle.low), // Low price for ATR
             close: parseFloat(candle.close), // Most critical for MA50
-            volume: parseFloat(candle.volume) || 0 // Forex volume is often zero or ticks
+            volume: candle.volume ? parseFloat(candle.volume) : 0 // Forex volume is often zero or ticks
         })).reverse(); // Reverse because , to calculate indicators we go from old to new [1]
 
         // 5. UPDATE SIGNAL CACHE
