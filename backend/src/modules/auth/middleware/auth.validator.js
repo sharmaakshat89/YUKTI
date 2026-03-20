@@ -9,7 +9,7 @@ export const registerValidationRules =
     .withMessage('ENTER VALID EMAIL'),//ERR MSG
     
 
-    body('passsword')//for req.body.password
+    body('password')//for req.body.password
     .isLength({min:6})//atleast six chars
     .withMessage('PASSWORD IS TOO SMALL') //ERR MSG
     .trim() // REMoves unnecc spaces

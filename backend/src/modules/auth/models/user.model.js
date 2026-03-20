@@ -31,7 +31,7 @@ userSchema.pre('save', async function (next){// to hash data before saving for a
             return next()
     }
     const salt = await bcrypt.genSalt(10) //gen salt of 10 rounds
-    this.password=await bcrypt.hash(this.password,hash) // conv pswd in text to hash
+    this.password=await bcrypt.hash(this.password,salt) // conv pswd in text to hash
     next() // now move to next logical sequence
 })
 

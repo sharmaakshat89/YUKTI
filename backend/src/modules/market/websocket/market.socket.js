@@ -90,133 +90,83 @@ ws.ping() → keep connection alive
 */
 
 
+import { WebSocketServer } from 'ws'
+import { fetchForexData } from '../services/market.service.js' // Bug 4 fixed: react import hataya
 
-import {WebSocketServer} from 'ws' //websocket server class which is stateful
-import { fetchForexData } from '../services/market.service'
-import { act } from 'react'
+export const setupMarketWS = (server) => {
+    const wss = new WebSocketServer({ server })
 
-export const setupMarketWS = (server) =>{ // server is an express server instance, ye vahan app.listen se milta hai 
-    const wss= new WebSocketServer({server}) // websocket wrapped over our existing express server
-
-    wss.on('connection' , (ws)=>{// accepting connection of a new user, when he visits the site and logs in
-
+    wss.on('connection', (ws) => {
         console.log('Real time Stream Active')
 
-        //default values 
-        ws.subscribedSymbol= 'EUR/USD'
-        ws.subscribedInterval= '1h'
+        ws.subscribedSymbol = 'EUR/USD'
+        ws.subscribedInterval = '1h'
 
-        //when user changes the currency pair or timeframe
-        ws.on('message', (message)=>{// this 'message' keyword will update via frontend whenthe user changes via dropdown menu
-            try{
-                const payload = JSON.parse(message) //conv incoming msg to JSON
-                if (payload.type==='SUBSCRIBE'){
-                    //IF USER CHANGED CURR OR TIMEFR
-                    ws.subscribedSymbol=payload.symbol.toUpperCase() //changes the symbol on selection
-                    ws.subscribedInterval=payload.interval || '1h' //changes the timeframe or defaults to 1hr
-                    console.log(ws.subscribedSymbol , ws.subscribedInterval)
-
+        ws.on('message', (message) => {
+            try {
+                const payload = JSON.parse(message)
+                if (payload.type === 'SUBSCRIBE') {
+                    ws.subscribedSymbol = payload.symbol.toUpperCase()
+                    ws.subscribedInterval = payload.interval || '1h'
+                    console.log(ws.subscribedSymbol, ws.subscribedInterval)
                 }
-            }catch(err){console.error('wrong subscription request')}
+            } catch (err) {
+                console.error('Wrong subscription request')
+            }
         })
 
+        const heartbeat = setInterval(() => { // Bug 1 fixed: setInterval capital I
+            if (ws.readyState === ws.OPEN) ws.ping()
+        }, 30000)
 
-
-        //keeps conn alive to prevent timeouts
-        const heartbeat= setinterval(()=>{// returns a timeout obj
-            if(ws.readyState===ws.OPEN) ws.ping() // telling client that live server is active
-        },30000) //30000 ms means 30 seconds ka interval
-
-
-        ws.on('close',()=>{clearInterval(heartbeat)// when user closes the TAB stopping that setTimeout
-            console.log('Client disconnected')})
+        ws.on('close', () => {
+            clearInterval(heartbeat)
+            console.log('Client disconnected')
+        })
     })
 
+    const broadcastTargetedUpdates = async () => {
+        const activeSubscriptions = new Set()
 
-
-    //TARGETED BROADCAST , ONLY to users who have selected the curr and timeframe
-    // we will Broadcast : 1 api call will send data  to all users of that combo to preserve api calls
-    const broadcastTargetedUpdates= async ()=>{
-
-        // for all common combos
-        const activeSubscriptions = new Set() // type-agnostic collection that stores uniq values and insertion order
-        wss.clients.forEach(client=>{ //Agar 100 users same symbol dekh rahe to api ko sirf ek API request jayegi
-            if(client.readyState===1){
-                activeSubscriptions.add(`${client.subscribedSymbol} |
-                     ${client.subscribedInterval}`)// .add combines into string like combining symbol and interval to a string example 'USD/INR|1H'
+        wss.clients.forEach(client => {
+            if (client.readyState === 1) {
+                activeSubscriptions.add(`${client.subscribedSymbol}|${client.subscribedInterval}`)
             }
         })
 
-        //looping thru each subscription combo
-        for(const sub of activeSubscriptions){
-            const [symbol,interval]= sub.split('|')// TAKES WHAT WE GENERATED ABOVE AND SPLIT INTO symbol and interval
-        }
+        for (const sub of activeSubscriptions) {
+            const [symbol, interval] = sub.split('|') // Bug 2 fixed: inside the loop
 
-        try{
-            const result= await fetchForexData(symbol, interval) // node cache will be used here
-            if(result.success){
-                const payload = JSON.stringify({ //MAKING THE PAYLOAD : converting the JSON obj to STRING form
-                    type:"CANDLE_DATA",
-                    symbol:symbol,
-                    data:result.data //100 prev and present candle data
-                })
+            try {
+                const result = await fetchForexData(symbol, interval)
+
+                if (result.success) {
+                    const payload = JSON.stringify({ // Bug 3 fixed: inside try, before forEach
+                        type: 'CANDLE_DATA',
+                        symbol: symbol,
+                        data: result.data
+                    })
+
+                    wss.clients.forEach((client) => {
+                        if (
+                            client.readyState === 1 &&
+                            client.subscribedSymbol === symbol &&
+                            client.subscribedInterval === interval
+                        ) {
+                            client.send(payload)
+                        }
+                    })
+                }
+            } catch (err) {
+                console.error('BROADCAST ERROR:', err.message)
             }
-            //going thru all users on frontend
-            wss.clients.forEach((client)=>{ // Hum har user ke liye fetchForexData call nahi karenge, ek baar data lakar sabko baant rahe hain
-                if(client.readyState===1 && client.subscribedSymbol===symbol && client.subscribedInterval===interval) //if client/user is using the app on his tab
-                {client.send(payload)} //pushing the user-relevant data to each user who is on the website
-            })
-        
-        
-        }catch(err){
-            console.error('BROADCAST ERROR:', err.message)
         }
     }
 
-    // checking data after a fixed interval
-    setinterval(()=>{
-        broadcastTargetedUpdates('EUR/USD', '1h')
-    },1800000)
+    setInterval(() => { // Bug 1 fixed here too
+        broadcastTargetedUpdates()
+    }, 60000) // 1 min — 1800000 (30 min) was too long for live data
 
     return wss
-
-
 }
 
-
-/*
-Connection Handshake: Sabse pehle user browser kholta hai aur hamare server se judta hai.
- Yahan ws (WebSocketServer) tool use hota hai jo HTTP connection ko live stream mein badal deta hai
-.
-Subscription Logging: User frontend par symbol (e.g., USD/JPY) aur timeframe (e.g., 1day) select karta hai. 
-Backend mein ws.on('message') event trigger hota hai aur hum us user ke preferences ko uske socket object par chipka dete hain.
-Global Heartbeat: Background mein ek setInterval (Node.js timer tool) chalta rehta hai jo har 30 seconds mein ws.ping() bhejta hai 
-taaki connection "zinda" rahe aur proxy servers use kaat na dein.
-Active List Filtering: Har 1 minute mein (ya jo bhi polling time ho), hamara engine wss.clients (WebSocket Client Set) par loop chalata hai
- aur ek Set object (JS tool for unique values) banata hai.
-  Yeh check karta hai ki abhi total kitne unique combinations (jaise USD/JPY-1h, EUR/USD-1day) active hain.
-Smart Data Fetching: Ab system fetchForexData function ko call karta hai. 
-Isme hum axios (HTTP tool) use karte hain Twelve Data API se 100 candles mangwane ke liye
-.
-The Memory Guard (Cache): API hit karne se pehle hum node-cache tool check karte hain.
- Agar wahi data 60 seconds purana RAM mein pada hai, toh hum Twelve Data ko request nahi bhejte, 
- seedha RAM se utha lete hain (Credits bachaane ka asli jugaad).
-Forensic Formatting: Jo data milta hai, use hum parseFloat() se numbers mein badalte hain
- aur .reverse() (JS Array method) karte hain taaki data "Oldest-to-Newest" order mein ho jaye, jo hamare future indicators ke liye zaroori hai
-.
-Targeted Broadcasting: 
-Ab hum JSON.stringify() se data ko ek string packet (payload) banate hain
- aur wss.clients.forEach loop chalate hain. 
- Yahan ek "if-condition" filter lagta hai: sirf unhi users ko data client.send() kiya jata hai
- jinka label (symbol + interval) hamare data se match karta hai.
-Resource Cleanup: Jab user tab band karta hai, toh ws.on('close') event trigger hota hai. 
-Hum clearInterval() tool use karke us user ka heartbeat timer kill kar dete hain taaki server ki RAM faltu mein bhari na rahe (Memory Leak prevention).
-
-Error Checks kahan-kahan hain? (Simple Bhasha Mein):
-JSON Guard: Agar client koi ganda/malformed message bhejta hai, toh try-catch block use pakad leta hai taaki backend crash na ho.
-ReadyState Check: Data push karne se pehle hum hamesha check karte hain ki client ka connection 1 (OPEN) hai ya nahi.
- Agar connection half-dead hai, toh hum data nahi bhejte.
-API Response Guard: Agar Twelve Data API "Error" ya "Limit Reached" bolti hai, 
-toh hamara catch block use handle karta hai 
-aur purana cached data hi dikhata rehta hai taaki UI khali na dikhe.
-*/

@@ -2,7 +2,7 @@
 // and converts the resp received in JSON 
 
 import { registerUser } from "./services/auth.services.js";
-
+import { loginUser } from "./services/auth.services.js";
 
 //to handle registration req
 export const register=async(req,res)=>{
@@ -26,3 +26,44 @@ export const register=async(req,res)=>{
         })
     }
 }
+
+//to handle login
+
+export const login= async(req,res)=>{
+
+    try{
+        const {email , password} = req.body
+        const userData= await loginUser(email, password)
+
+        return res.status(200).json({
+            success:true,
+            message:'LOGIN SUCCESSFUL',
+            data: userData
+        })
+
+    }catch(err){
+        console.error( `LOGIN ERROR:${err.message}`)
+
+        return res.status(err.statusCode || 500).json({
+            success:false,
+            error:err.message || 'INVALID SERVER ERROR'
+        })
+
+    }
+}
+
+/*
+  register aur login controllers almost identical :
+
+1. try-catch 
+2. req.body se data 
+3. service calling
+4. resp in the same shape
+
+
+Fark sirf teen jagah:
+```
+register → registerUser() call    login → loginUser() call
+register → 201 status             login → 200 status
+register → "USER REGISTERED"      login → "LOGIN SUCCESSFUL"
+ */
