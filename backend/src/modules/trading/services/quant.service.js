@@ -17,7 +17,6 @@ const signalCache = new NodeCache({ stdTTL: 60 });
 // MACD_n  (MACD direction)   → 0.05
 // TOTAL                      → 1.00 ✅
 // =============================================================================
-
 export const getUnifiedSignal = (symbol, interval, candles) => {
 
     // -------------------------------------------------------------------------
@@ -273,25 +272,74 @@ export const getUnifiedSignal = (symbol, interval, candles) => {
         //   indicators      → Object (raw values for UI/logging/backtesting)
         //   timestamp       → Number (Unix ms)
         // =====================================================================
-        const result = {
-            success: true,
-            symbol,
-            signal,
-            score: parseFloat(C_t.toFixed(4)),
-            risk: {
-                stopLoss:   parseFloat((P_t - ATR_10 * 1.5).toFixed(4)),
-                takeProfit: parseFloat((P_t + ATR_10 * 3).toFixed(4))
-            },
-            indicators: {
-                rsi:       parseFloat(RSI_t.toFixed(2)),
-                adx:       parseFloat(ADX_val.toFixed(2)),
-                supertrend: ST_bias,                          // -1 | 0 | 1
-                hma:       parseFloat(HMA_t.toFixed(4)),
-                macdHist:  parseFloat(MACD_hist.toFixed(4)), // raw histogram for charts
-                bbWidth:   parseFloat(BBWidth_t.toFixed(4))  // squeeze monitoring
-            },
-            timestamp: Date.now()
-        };
+    
+    const result = {
+    success: true,
+    symbol,
+    signal,
+    score: parseFloat(C_t.toFixed(4)),
+    risk: {
+        stopLoss:   parseFloat((P_t - ATR_10 * 1.5).toFixed(4)),
+        takeProfit: parseFloat((P_t + ATR_10 * 3).toFixed(4))
+    },
+
+    indicators: {
+        rsi:        parseFloat(RSI_t.toFixed(2)),
+        // RSI_t = last RSI value — current candle ka
+        adx:        parseFloat(ADX_val.toFixed(2)),
+        // ADX_val = last ADX value
+        supertrend: ST_bias,
+        // +1 ya -1 ya 0
+        hma:        parseFloat(HMA_t.toFixed(4)),
+        // HMA_t = last HMA value
+        macdHist:   parseFloat(MACD_hist.toFixed(4)),
+        // MACD histogram last value
+        bbWidth:    parseFloat(BBWidth_t.toFixed(4)),
+        // Bollinger Band width last value
+        ma50:       parseFloat(MA_t.toFixed(4))
+        // MA_t already calculate hua tha upar
+        // sirf return mein nahi tha — ab add kiya
+    },
+
+    indicatorSeries: {
+        ma50: smaArr.map(v => parseFloat(v.toFixed(4))),
+        // smaArr = SMA.calculate() ne return kiya tha poora array
+        // [83.20, 83.31, 83.38, 83.45, ...]
+        // har candle ka MA50 value — chart pe line banegi
+        // .map() se har value 4 decimal pe round ki
+
+        rsi: rsiArr.map(v => parseFloat(v.toFixed(2))),
+        // rsiArr = RSI.calculate() ne return kiya tha
+        // [45.2, 43.1, 38.4, 34.2, ...]
+        // neeche wala RSI panel is array se banega
+
+        macd: macdArr.map(v => parseFloat((v.histogram || 0).toFixed(4))),
+        // macdArr = MACD.calculate() ne return kiya tha
+        // har element mein histogram, signal, MACD hota hai
+        // histogram nikala — MACD panel ke liye
+        // || 0 — agar kisi candle mein undefined ho
+
+        adx: adxArr.map(v => parseFloat((v.adx || 0).toFixed(2))),
+        // adxArr = ADX.calculate() ne return kiya tha
+        // har element mein .adx property hoti hai
+        // ADX panel ke liye
+
+        hma: hmaArr.map(v => parseFloat(v.toFixed(4))),
+        // hmaArr = WMA.calculate() ne return kiya tha
+        // HMA line chart pe overlay hogi candles ke saath
+
+        bbUpper: bbArr.map(v => parseFloat((v.upper || 0).toFixed(4))),
+        // bbArr = BollingerBands.calculate() ne return kiya tha
+        // upper band — chart pe upper line
+        
+        bbLower: bbArr.map(v => parseFloat((v.lower || 0).toFixed(4))),
+        // lower band — chart pe lower line
+        // dono bands ke beech mein price hoti hai mostly
+    },
+
+    timestamp: Date.now()
+};
+
 
         signalCache.set(cacheKey, result);
         return result;

@@ -8,6 +8,7 @@ import authRoutes from './routes/auth.routes.js'
 import { errorHandler, notFound } from './modules/auth/middleware/error.middleware.js'
 import { setupMarketWS } from './modules/market/websocket/market.socket.js'
 import signalRoutes from './modules/signal/routes/signal.routes.js'
+import aiRoutes from './modules/ai/routes/ai.routes.js'
 
 dotenv.config() // enable env vars
 
@@ -28,6 +29,28 @@ app.use('api/v1/auth', authRoutes) // adding routes with versioning for future c
 
 app.use('/api/v1/signal',signalRoutes)
 
+app.use('/api/v1/ai' , aiRoutes)
+
+/*
+**AI module flow:
+
+POST /api/v1/ai/analyze
+        ↓
+protect — is JWT valid?
+        ↓
+getAIAnalysis controller
+        ↓
+fetchForexData    ← candles (cache/API CALL)
+getUnifiedSignal  ← quant signal (Mathematical calc)
+getAIValidation   ← Gemini call (cache ya API)
+        ↓
+200 + { quantSignal, aiValidation }
+
+**Status update karte hain:**
+
+DONE ✅
+
+*/
 
 //health check
 app.get('/health', (req,res)=>{ // to check if server is up or not
