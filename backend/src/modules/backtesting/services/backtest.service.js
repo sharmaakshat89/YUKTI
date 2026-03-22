@@ -5,7 +5,7 @@ import { fetchForexData } from '../../market/services/market.service.js';
 import { runBacktest } from '../engine/backtest.engine.js';
 
 const backtestCache = new NodeCache({ stdTTL: 3600 });
-
+const MIN_CANDLES_REQUIRED = 120 
 export const runBacktestService = async (symbol, interval) => {
     try {
         const ALLOWED_SYMBOLS = ['USD/INR', 'EUR/INR', 'GBP/INR', 'JPY/INR'];
@@ -33,7 +33,7 @@ export const runBacktestService = async (symbol, interval) => {
 
         console.log(`[BacktestService] Cache MISS — fetching: ${cacheKey}`);
 
-        const marketResult = await fetchForexData(symbol, interval);
+        const marketResult = await fetchForexData(symbol, interval, 500);
 
         if (!marketResult.success || !marketResult.data) {
             const error = new Error('Failed to fetch market data for backtesting');

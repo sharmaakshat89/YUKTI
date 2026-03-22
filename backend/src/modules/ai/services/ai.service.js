@@ -44,14 +44,17 @@ export const getAIValidation = async (symbol , interval , quantSignal , indicato
 
     const cacheKey= `ai_${symbol}_${interval}_${quantSignal.signal}`
 
-    const cachedResponse = aiCache.get(cacheKey) //explain how cache code is written
+    try{
+        
+        const cachedResponse = aiCache.get(cacheKey) //explain how cache code is written
 
-    if(cachedResponse){
+        if(cachedResponse){
         console.log('RESP SERVED FROM CACHE')
         return{ success:true , data:cachedResponse , source: 'cache'}
-    }
-    try{
+        }
         const recentCandles = candles.slice(-20) //last 5 candles to keep token size less
+
+
         const prompt = `
         Analyze this currency pair and validate the quant signal:
 

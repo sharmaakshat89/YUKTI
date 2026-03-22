@@ -1,6 +1,6 @@
-import { getAIValidation } from "../services/ai.service";
-import { fetchForexData } from "../../market/services/market.service";
-import { getUnifiedSignal } from "../../trading/services/quant.service";
+import { getAIValidation } from "../services/ai.service.js";
+import { fetchForexData } from "../../market/services/market.service.js";
+import { getUnifiedSignal } from "../../trading/services/quant.service.js";
 
 export const getAIAnalysis = async (req,res)=>{
 

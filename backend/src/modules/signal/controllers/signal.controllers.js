@@ -1,8 +1,8 @@
 
 
-import { getUnifiedSignal } from "../../trading/services/quant.service";
+import { getUnifiedSignal } from "../../trading/services/quant.service.js";
 
-import { fetchForexData } from "../../market/services/market.service";
+import { fetchForexData } from "../../market/services/market.service.js";
 
 export const getSignal = async(req,res)=>{
 

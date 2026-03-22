@@ -20,12 +20,12 @@ connectDB()
 
 //middlewares to be used 
 app.use(helmet())// security of headers 
-app.use(cors({origin:FRONTEND_URL || 'http://localhost:5173', credentials:true}))//only allowing requests through these two links, credentials-true will allow cookies on frontend
+app.use(cors({origin:process.env.FRONTEND_URL || 'http://localhost:5173', credentials:true}))//only allowing requests through these two links, credentials-true will allow cookies on frontend
 app.use(morgan('dev')) //data of each req in easily readable format
 app.use(express.json()) // converts req body to CLEAN json. this should come after CORS placement 
 
 
-app.use('api/v1/auth', authRoutes) // adding routes with versioning for future changes if any
+app.use('/api/v1/auth', authRoutes) // adding routes with versioning for future changes if any
 app.use('/api/v1/backtest',  backtestRoutes) 
 app.use('/api/v1/signal',signalRoutes)
 

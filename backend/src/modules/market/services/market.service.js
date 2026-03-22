@@ -11,7 +11,7 @@ const signalCache = new NodeCache({ stdTTL: 60 }); //reserves space in RAM
  * Service to fetch Forex Data (e.g., EUR/USD) from Twelve Data.
  * Guards credits by using an internal caching layer.
  */
-export const fetchForexData = async (symbol = 'EUR/USD', interval = '1h') => {
+export const fetchForexData = async (symbol = 'EUR/USD', interval = '1h', outputsize=100) => {
     //const latestTime = response?.data?.values?.[0]?.datetime || 'unknown';
     const cacheKey = `forex_${symbol}_${interval}`; // Unique key for cache lookup
 
@@ -26,6 +26,7 @@ export const fetchForexData = async (symbol = 'EUR/USD', interval = '1h') => {
         // 2. API CALL
         const response = await axios.get(`https://api.twelvedata.com/time_series`, {
             params: {
+                outputsize: outputsize,
                 symbol: symbol, // Currency pair like EUR/USD
                 interval: interval, // '1h' candle
                 apikey: process.env.TWELVE_DATA_KEY, // Obtained from Twelve Data dashboard

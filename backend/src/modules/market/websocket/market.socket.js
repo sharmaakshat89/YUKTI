@@ -99,7 +99,7 @@ export const setupMarketWS = (server) => {
     wss.on('connection', (ws) => {
         console.log('Real time Stream Active')
 
-        ws.subscribedSymbol = 'EUR/USD'
+        ws.subscribedSymbol = 'USD/INR'
         ws.subscribedInterval = '1h'
 
         ws.on('message', (message) => {

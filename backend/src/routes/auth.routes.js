@@ -5,9 +5,9 @@ import {
     registerValidationRules,
     loginValidationRules,
     validate
-} from './middleware/auth.validator.js'
+} from '../modules/auth/middleware/auth.validator.js'
 // ✅ BUG FIX: path fix — middleware is inside auth module
-import { register, login } from './auth.controller.js'
+import { register, login } from '../modules/auth/auth.controller.js'
 
 const router = express.Router()
 
