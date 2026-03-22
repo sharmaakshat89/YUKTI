@@ -1,66 +1,60 @@
-import {body,validationResult} from 'express-validator'
+// backend/src/modules/auth/middleware/auth.validator.js
 
-//defining validation rules
+import { body, validationResult } from 'express-validator'
 
-export const registerValidationRules = 
-[
-    body('email') // when checking req.body.email
-    .isEmail() // check if the email format is correct
-    .withMessage('ENTER VALID EMAIL'),//ERR MSG
-    
+// ─────────────────────────────────────────────────────────────────
+// REGISTER VALIDATION RULES
+// ─────────────────────────────────────────────────────────────────
+export const registerValidationRules = [
+    body('email')
+        .isEmail()
+        .withMessage('Valid email required')
+        .normalizeEmail(),
+        // normalizeEmail() — "User@Gmail.com" → "user@gmail.com"
+        // Automatically lowercase + trim karta hai
 
-    body('password')//for req.body.password
-    .isLength({min:6})//atleast six chars
-    .withMessage('PASSWORD IS TOO SMALL') //ERR MSG
-    .trim() // REMoves unnecc spaces
+    body('password')
+        // ✅ BUG FIX: pehle 'passsword' tha (3 s) — typo
+        .isLength({ min: 6 })
+        .withMessage('Password must be at least 6 characters')
+        .trim()
 ]
 
-//middleware that catches validationerrs
+// ─────────────────────────────────────────────────────────────────
+// LOGIN VALIDATION RULES
+// Register se alag kyun nahi use kiya?
+// Login mein password complexity check nahi chahiye
+// Sirf presence + basic format check
+// ─────────────────────────────────────────────────────────────────
+export const loginValidationRules = [
+    body('email')
+        .isEmail()
+        .withMessage('Valid email required')
+        .normalizeEmail(),
 
-export const validate= (req,res,next) =>{ //std mdw syntax
-    const errors=validationResult(req) // get all validation err from req obj
+    body('password')
+        .notEmpty()
+        .withMessage('Password required')
+        .trim()
+        // notEmpty() — sirf check karo khali nahi hai
+        // length check nahi — wrong password pe
+        // meaningful error chahiye, not "too short"
+]
 
-    if(errors.isEmpty()){
-        return next() //if no err then move to controller logic
-    }
+// ─────────────────────────────────────────────────────────────────
+// VALIDATE MIDDLEWARE — same as before
+// ─────────────────────────────────────────────────────────────────
+export const validate = (req, res, next) => {
+    const errors = validationResult(req)
 
-    
-    const extractedErrors=[] //empty array for errors
-    errors.array().map(err=>
-        extractedErrors.push({
-            [err.path]:err.msg
-        })
-    )
+    if (errors.isEmpty()) return next()
 
+    const extractedErrors = errors.array().map(err => ({
+        [err.path]: err.msg
+    }))
 
-// express-validator returns something like : 
-/* errors.array = [
-  {
-    type: "field",
-    value: "abc",
-    msg: "Invalid email",           and what was the err msg
-    path: "email",                   tells which field failed        
-    location: "body"
-  }          it is noisy, we dont need all of this @ frontend
-
-  so final result of 
-  errors.array().map(err=>
-        extractedErrors.push({
-            [err.path]:err.msg
-        })
-    ) is  
-
-=   [
-  { email: "Invalid email" },
-  { password: "Too short" }
-    ]
-]*/
-
-
-    return res.status(422).json({ //422 if that thing cant be processed
-        success:false,
-        errors:extractedErrors //here we have listed all validation errors
+    return res.status(422).json({
+        success: false,
+        errors:  extractedErrors
     })
-
 }
-

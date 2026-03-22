@@ -9,7 +9,7 @@ import { errorHandler, notFound } from './modules/auth/middleware/error.middlewa
 import { setupMarketWS } from './modules/market/websocket/market.socket.js'
 import signalRoutes from './modules/signal/routes/signal.routes.js'
 import aiRoutes from './modules/ai/routes/ai.routes.js'
-
+import backtestRoutes from './modules/backtesting/routes/backtest.routes.js'
 dotenv.config() // enable env vars
 
 //server instance
@@ -26,7 +26,7 @@ app.use(express.json()) // converts req body to CLEAN json. this should come aft
 
 
 app.use('api/v1/auth', authRoutes) // adding routes with versioning for future changes if any
-
+app.use('/api/v1/backtest',  backtestRoutes) 
 app.use('/api/v1/signal',signalRoutes)
 
 app.use('/api/v1/ai' , aiRoutes)

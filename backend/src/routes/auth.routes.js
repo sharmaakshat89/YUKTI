@@ -1,29 +1,30 @@
-// defines the endpoints and tells the method(GET,POST) Attached to a specific controller
+// backend/src/modules/auth/routes/auth.routes.js
 
 import express from 'express'
-import { registerValidationRules, validate } from '../modules/auth/middleware/auth.validator.js'
-import { register } from '../modules/auth/auth.controller.js'
-import { protect } from '../modules/auth/middleware/auth.middleware.js'
-import { login } from '../modules/auth/auth.controller.js'
+import {
+    registerValidationRules,
+    loginValidationRules,
+    validate
+} from './middleware/auth.validator.js'
+// ✅ BUG FIX: path fix — middleware is inside auth module
+import { register, login } from './auth.controller.js'
 
-/*
-Public routes :
-POST /register     ← naya user, token nahi hai
-POST /login        ← token lene aa raha hai
+const router = express.Router()
 
-Protected routes (protect lagega):
-GET  /profile      ← sirf logged in user dekhe
-POST /trade        ← sirf logged in user trade kare
-GET  /portfolio    ← sirf apna data dekhe
- */
+// POST /api/v1/auth/register
+router.post(
+    '/register',
+    registerValidationRules,
+    validate,
+    register
+)
 
-
-const router = express.Router() //router ka instance
-router.get('/profile', protect, getProfile)
-// for POST req
-
-router.post('/register', registerValidationRules, validate, register)
-
-router.post('/login' , validate, login)// login doesnt need strict validation hence no validation mdw
+// POST /api/v1/auth/login
+router.post(
+    '/login',
+    loginValidationRules,
+    validate,
+    login
+)
 
 export default router

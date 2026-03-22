@@ -1,69 +1,70 @@
-// passes the data from req.body to the service , 
-// and converts the resp received in JSON 
+// backend/src/modules/auth/auth.controller.js
 
-import { registerUser } from "./services/auth.services.js";
-import { loginUser } from "./services/auth.services.js";
+import { registerUser, loginUser } from './services/auth.services.js'
 
-//to handle registration req
-export const register=async(req,res)=>{
+// ─────────────────────────────────────────────────────────────────
+// REGISTER CONTROLLER
+// ─────────────────────────────────────────────────────────────────
+export const register = async (req, res) => {
+    try {
+        const { email, password } = req.body
 
-    try{
-        const{email,password}=req.body //getting email,pswd from req
+        const userData = await registerUser(email, password)
 
-        const userData= await registerUser(email,password) // gives us a userData obj after checks which has id , email, token
-
-        return res.status(201).json({ //201: user created 
-            success:true, // Agar error aaye toh frontend pe likh denge: if (res.data.success) { ... }.
-            message:'USER REGISTERED SUCCESSFULLY',
-            data:userData //will have email,id,token
+        return res.status(201).json({
+            success: true,
+            message: 'User registered successfully',
+            data:    userData
         })
-    }
-    catch(err){ // catching errors specifically the user limit reached
-        console.error(`registration error: ${err.message}`)
+
+    } catch (err) {
+        console.error(`[AuthController] Register error: ${err.message}`)
         return res.status(err.statusCode || 500).json({
-            success:false,
-            error:err.message || "Internal server error"
+            success: false,
+            error:   err.message || 'Internal server error'
         })
     }
 }
 
-//to handle login
+// ─────────────────────────────────────────────────────────────────
+// LOGIN CONTROLLER
+// ─────────────────────────────────────────────────────────────────
+export const login = async (req, res) => {
+    try {
+        const { email, password } = req.body
 
-export const login= async(req,res)=>{
+        // ─────────────────────────────────────────
+        // BASIC PRESENCE CHECK
+        // Validator middleware bhi check karta hai
+        // lekin agar koi route pe validator na lage
+        // toh controller bhi guard kare
+        // ─────────────────────────────────────────
+        if (!email || !password) {
+            return res.status(400).json({
+                success: false,
+                error:   'Email aur password dono required hain'
+            })
+        }
 
-    try{
-        const {email , password} = req.body
-        const userData= await loginUser(email, password)
+        const userData = await loginUser(email, password)
 
+        // ─────────────────────────────────────────
+        // 200 kyun 201 nahi?
+        // 201 = resource created (register ke liye)
+        // 200 = successful operation (login ke liye)
+        // Login mein kuch create nahi hota — sirf verify
+        // ─────────────────────────────────────────
         return res.status(200).json({
-            success:true,
-            message:'LOGIN SUCCESSFUL',
-            data: userData
+            success: true,
+            message: 'Login successful',
+            data:    userData
         })
 
-    }catch(err){
-        console.error( `LOGIN ERROR:${err.message}`)
-
+    } catch (err) {
+        console.error(`[AuthController] Login error: ${err.message}`)
         return res.status(err.statusCode || 500).json({
-            success:false,
-            error:err.message || 'INVALID SERVER ERROR'
+            success: false,
+            error:   err.message || 'Internal server error'
         })
-
     }
 }
-
-/*
-  register aur login controllers almost identical :
-
-1. try-catch 
-2. req.body se data 
-3. service calling
-4. resp in the same shape
-
-
-Fark sirf teen jagah:
-```
-register → registerUser() call    login → loginUser() call
-register → 201 status             login → 200 status
-register → "USER REGISTERED"      login → "LOGIN SUCCESSFUL"
- */
