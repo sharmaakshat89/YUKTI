@@ -15,7 +15,7 @@ const api = axios.create({
   // import.meta.env.VITE_API_URL — .env file se value aati hai
   // .env mein likha hai: VITE_API_URL=http://localhost:5000/api/v1
   // agar .env mein nahi mili toh fallback use hoga
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1',
+  baseURL:'http://localhost:5000/api/v1',
 
   // 10 seconds mein server respond nahi kiya toh cancel
   // bina timeout ke request forever pending reh sakti hai

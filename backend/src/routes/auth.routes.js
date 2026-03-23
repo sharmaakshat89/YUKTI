@@ -14,7 +14,7 @@ const router = express.Router()
 // POST /api/v1/auth/register
 router.post(
     '/register',
-    registerValidationRules,
+    ...registerValidationRules,
     validate,
     register
 )
@@ -22,9 +22,9 @@ router.post(
 // POST /api/v1/auth/login
 router.post(
     '/login',
-    loginValidationRules,
+    ...loginValidationRules,
     validate,
     login
 )
-
+console.log("validate:", typeof validate)
 export default router
